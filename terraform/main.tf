@@ -1,4 +1,4 @@
 resource "azurerm_resource_group" "emf_rg"{
-    name = "rg-emf-terraform-dev"
-    location = "Central India"
+    name = var.resource_group_name
+    location = var.location
 }
