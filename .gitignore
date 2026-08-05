@@ -7,3 +7,21 @@ terraform.tfvars
 .vscode/
 
 *.log
+# Terraform working directory
+.terraform/
+
+# Terraform state
+*.tfstate
+*.tfstate.*
+
+# Terraform plans
+*.tfplan
+.tfplan
+
+# Crash logs
+crash.log
+
+# Variable files containing secrets (optional)
+*.auto.tfvars
+
+dev.tfvars
