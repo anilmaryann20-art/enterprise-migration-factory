@@ -62,6 +62,8 @@ module "network_interface" {
   location = var.location
 
   subnet_id = module.subnet.subnet_id
+
+  public_ip_id = module.public_ip.public_ip_id
 }
 
 module "virtual_machine" {
@@ -80,4 +82,14 @@ module "virtual_machine" {
   admin_username = var.admin_username
 
   admin_password = var.admin_password
+}
+
+module "public_ip" {
+  source = "./modules/public_ip"
+
+  public_ip_name = var.public_ip_name
+
+  resource_group_name = module.resource_group.resource_group_name
+
+  location = var.location
 }

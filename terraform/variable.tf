@@ -60,3 +60,8 @@ variable "admin_password" {
   description = "Administrator Password"
   type        = string
 }
+
+variable "public_ip_name" {
+  description = "Public IP Name"
+  type        = string
+}

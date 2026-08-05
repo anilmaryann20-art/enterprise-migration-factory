@@ -19,3 +19,6 @@ variable "subnet_id"{
     type = string
 
 }
+variable "public_ip_id" {
+    type = string
+}
