@@ -9,7 +9,7 @@ pipeline {
         ACR_LOGIN_SERVER = "acremfdev001.azurecr.io"
         IMAGE_NAME       = "migration-dashboard"
 
-        TF_VAR_FILE = "C:\\ProgramData\\Jenkins\\.jenkins\\terraform-secrets\\dev.tfvars"
+        //TF_VAR_FILE = "C:\\ProgramData\\Jenkins\\.jenkins\\terraform-secrets\\dev.tfvars"
 
     }
 
@@ -118,72 +118,64 @@ pipeline {
 
 
 
-        stage('Terraform Plan') {
+       stage('Terraform Plan') {
 
+        steps {
 
-            steps {
+            echo "Terraform Plan"
 
+            withCredentials([
+                file(
+                    credentialsId: 'terraform-dev-tfvars',
+                    variable: 'TFVARS_FILE'
+                )
+            ]) {
 
-                echo "Terraform Plan"
+            dir('terraform') {
 
-
-
-                dir('terraform') {
-
-
-                    bat """
-
-                    terraform plan ^
-                    -input=false ^
-                    -var-file="%TF_VAR_FILE%"
-
-
-                    """
-
-
-                }
-
+                bat """
+                terraform plan ^
+                -input=false ^
+                -var-file="%TFVARS_FILE%"
+                """
 
             }
 
-
         }
 
+    }
 
-
+}
 
 
 
         stage('Terraform Apply') {
 
-
             steps {
-
 
                 echo "Terraform Apply"
 
+                withCredentials([
+                    file(
+                        credentialsId: 'terraform-dev-tfvars',
+                        variable: 'TFVARS_FILE'
+                    )
+                ]) {
 
+                    dir('terraform') {
 
-                dir('terraform') {
+                        bat """
+                        terraform apply ^
+                        -auto-approve ^
+                        -input=false ^
+                        -var-file="%TFVARS_FILE%"
+                        """
 
-
-                    bat """
-
-                    terraform apply ^
-                    -auto-approve ^
-                    -input=false ^
-                    -var-file="%TF_VAR_FILE%"
-
-
-
-                    """
-
+                    }
 
                 }
 
-
             }
-
 
         }
 
