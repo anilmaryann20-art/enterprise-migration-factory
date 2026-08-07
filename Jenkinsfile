@@ -37,7 +37,7 @@ pipeline {
                 withCredentials([
 
                     usernamePassword(
-                        credentialsId: 'azure-sp-creds',
+                        credentialsId: 'azure-service-principal',
                         usernameVariable: 'AZURE_CLIENT_ID',
                         passwordVariable: 'AZURE_CLIENT_SECRET'
                     )
