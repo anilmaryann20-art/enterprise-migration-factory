@@ -357,44 +357,25 @@ pipeline {
 
 
                         sshCommand remote: remote, command: """
-
-
-                        echo Logging into ACR
-
-
-
-                        echo ${ACR_PASS} | docker login ${ACR_LOGIN_SERVER} ^
-                        -u ${ACR_USER} ^
+                        echo \$ACR_PASS | docker login ${ACR_LOGIN_SERVER} \
+                        -u ${ACR_USER} \
                         --password-stdin
-
-
-
 
 
                         docker pull ${ACR_LOGIN_SERVER}/${IMAGE_NAME}:latest
 
 
-
-
                         docker stop migration-dashboard || true
-
-
 
 
                         docker rm -f migration-dashboard || true
 
 
-
-
-
-                        docker run -d ^
-                        --restart unless-stopped ^
-                        -p 80:3000 ^
-                        --name migration-dashboard ^
+                        docker run -d \
+                        --restart unless-stopped \
+                        -p 80:3000 \
+                        --name migration-dashboard \
                         ${ACR_LOGIN_SERVER}/${IMAGE_NAME}:latest
-
-
-
                         """
 
 
