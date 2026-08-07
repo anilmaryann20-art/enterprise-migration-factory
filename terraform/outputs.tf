@@ -29,3 +29,15 @@ output "virtual_machine_name" {
 output "virtual_machine_id" {
   value = module.virtual_machine.virtual_machine_id
 }
+output "login_server" {
+  value = module.acr.login_server
+}
+
+output "admin_username" {
+  value = module.acr.admin_username
+}
+
+output "admin_password" {
+  value     = module.acr.admin_password
+  sensitive = true
+}

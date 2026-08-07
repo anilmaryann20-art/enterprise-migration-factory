@@ -23,5 +23,5 @@ crash.log
 
 # Variable files containing secrets (optional)
 *.auto.tfvars
-
 dev.tfvars
+

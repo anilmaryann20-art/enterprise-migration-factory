@@ -2,7 +2,7 @@ module "resource_group" {
   source = "./modules/resource_group"
 
   resource_group_name = var.resource_group_name
-  location = var.location
+  location            = var.location
 }
 
 module "storage_account" {
@@ -39,17 +39,17 @@ module "subnet" {
 }
 
 module "network_security_group" {
-  source = "./modules/networK_security_group"
+  source                      = "./modules/networK_security_group"
   network_security_group_name = var.network_security_group_name
-  resource_group_name = module.resource_group.resource_group_name
-  location = var.location
+  resource_group_name         = module.resource_group.resource_group_name
+  location                    = var.location
 
 }
 
 module "subnet_nsg_association" {
-  source = "./modules/subnet_nsg_association"
+  source                    = "./modules/subnet_nsg_association"
   network_security_group_id = module.network_security_group.network_security_group_id
-  subnet_id = module.subnet.subnet_id
+  subnet_id                 = module.subnet.subnet_id
 }
 
 module "network_interface" {
@@ -92,4 +92,12 @@ module "public_ip" {
   resource_group_name = module.resource_group.resource_group_name
 
   location = var.location
+}
+
+module "acr" {
+  source = "./modules/acr"
+
+  acr_name            = var.acr_name
+  resource_group_name = module.resource_group.resource_group_name
+  location            = var.location
 }

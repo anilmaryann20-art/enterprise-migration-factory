@@ -1,11 +1,11 @@
-variable "resource_group_name"{
-    description = "Name of the Resource Group"
-    type = string
+variable "resource_group_name" {
+  description = "Name of the Resource Group"
+  type        = string
 }
 
-variable "location"{
-    description = "Azure Region"
-    type = string
+variable "location" {
+  description = "Azure Region"
+  type        = string
 }
 variable "storage_account_name" {
   description = "Storage Account Name"
@@ -17,23 +17,23 @@ variable "virtual_network_name" {
   type        = string
 }
 
-variable "address_space"{
-    description = "Vnet address space"
-    type = list(string)
+variable "address_space" {
+  description = "Vnet address space"
+  type        = list(string)
 }
-variable "subnet_name"{
-    description = "Subent Name"
-    type = string
-}
-
-variable "address_prefixes"{
-    description = "address prefixes"
-    type = list(string)
+variable "subnet_name" {
+  description = "Subent Name"
+  type        = string
 }
 
-variable "network_security_group_name"{
-    description = "Network security group"
-    type = string
+variable "address_prefixes" {
+  description = "address prefixes"
+  type        = list(string)
+}
+
+variable "network_security_group_name" {
+  description = "Network security group"
+  type        = string
 }
 
 variable "network_interface_name" {
@@ -64,4 +64,9 @@ variable "admin_password" {
 variable "public_ip_name" {
   description = "Public IP Name"
   type        = string
+}
+
+variable "acr_name"{
+    description = "Azure Container Registry"
+    type = string
 }
