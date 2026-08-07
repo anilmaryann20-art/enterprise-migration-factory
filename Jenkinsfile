@@ -9,26 +9,13 @@ pipeline {
         ACR_LOGIN_SERVER = "acremfdev001.azurecr.io"
         IMAGE_NAME       = "migration-dashboard"
 
+        TF_VAR_FILE = "C:\\ProgramData\\Jenkins\\.jenkins\\terraform-secrets\\dev.tfvars"
+
     }
 
 
 
     stages {
-
-
-
-        stage('Checkout Code') {
-
-            steps {
-
-                echo "Checking out latest code from GitHub"
-
-                checkout scm
-
-            }
-
-        }
-
 
 
 
@@ -38,7 +25,6 @@ pipeline {
 
 
                 echo "Authenticating Jenkins with Azure"
-
 
 
                 withCredentials([
@@ -71,19 +57,27 @@ pipeline {
                     --tenant %AZURE_TENANT_ID%
 
 
-                    az account set --subscription %AZURE_SUBSCRIPTION_ID%
+
+                    az account set ^
+                    --subscription %AZURE_SUBSCRIPTION_ID%
+
 
 
                     az account show
 
 
+
                     """
+
 
                 }
 
+
             }
 
+
         }
+
 
 
 
@@ -95,22 +89,27 @@ pipeline {
             steps {
 
 
-                echo "Initializing and validating Terraform"
+                echo "Terraform validation"
 
 
 
                 dir('terraform') {
 
 
-                    bat "terraform init"
+                    bat """
 
+                    terraform init
 
-                    bat "terraform validate"
+                    terraform validate
+
+                    """
 
 
                 }
 
+
             }
+
 
         }
 
@@ -125,20 +124,28 @@ pipeline {
             steps {
 
 
-                echo "Planning Terraform infrastructure"
+                echo "Terraform Plan"
 
 
 
                 dir('terraform') {
 
 
-                    bat "terraform plan"
+                    bat """
 
+                    terraform plan ^
+                    -input=false ^
+                    -var-file="%TF_VAR_FILE%"
+
+
+                    """
 
 
                 }
 
+
             }
+
 
         }
 
@@ -153,20 +160,30 @@ pipeline {
             steps {
 
 
-                echo "Applying Terraform infrastructure"
+                echo "Terraform Apply"
 
 
 
                 dir('terraform') {
 
 
-                    bat "terraform apply -auto-approve"
+                    bat """
 
+                    terraform apply ^
+                    -auto-approve ^
+                    -input=false ^
+                    -var-file="%TF_VAR_FILE%"
+
+
+
+                    """
 
 
                 }
 
+
             }
+
 
         }
 
@@ -189,8 +206,14 @@ pipeline {
                 dir('app') {
 
 
-                    bat "docker build -t %IMAGE_NAME%:latest ."
+                    bat """
 
+                    docker build ^
+                    -t %IMAGE_NAME%:latest .
+
+
+
+                    """
 
 
                 }
@@ -207,13 +230,14 @@ pipeline {
 
 
 
+
         stage('Login and Push to ACR') {
 
 
             steps {
 
 
-                echo "Logging into Azure Container Registry"
+                echo "Push Docker image to Azure Container Registry"
 
 
 
@@ -235,36 +259,27 @@ pipeline {
 
 
 
-                    dir('app') {
+                    bat """
+
+
+                    docker login %ACR_LOGIN_SERVER% ^
+                    -u %ACR_USER% ^
+                    -p %ACR_PASS%
 
 
 
-                        bat """
-
-                        echo Logging into ACR
-
-
-
-                        docker login %ACR_LOGIN_SERVER% ^
-                        -u %ACR_USER% ^
-                        -p %ACR_PASS%
+                    docker tag ^
+                    %IMAGE_NAME%:latest ^
+                    %ACR_LOGIN_SERVER%/%IMAGE_NAME%:latest
 
 
 
-                        docker tag %IMAGE_NAME%:latest ^
-                        %ACR_LOGIN_SERVER%/%IMAGE_NAME%:latest
+                    docker push ^
+                    %ACR_LOGIN_SERVER%/%IMAGE_NAME%:latest
 
 
 
-                        docker push ^
-                        %ACR_LOGIN_SERVER%/%IMAGE_NAME%:latest
-
-
-
-                        """
-
-
-                    }
+                    """
 
 
                 }
@@ -289,12 +304,11 @@ pipeline {
             steps {
 
 
-                echo "Deploying application to Azure VM"
+                echo "Deploying application on Azure VM"
 
 
 
                 withCredentials([
-
 
 
                     usernamePassword(
@@ -308,7 +322,6 @@ pipeline {
                     ),
 
 
-
                     usernamePassword(
 
                         credentialsId: 'azure-acr-creds',
@@ -320,13 +333,11 @@ pipeline {
                     )
 
 
-
                 ]) {
 
 
 
                     script {
-
 
 
                         def remote = [
@@ -356,8 +367,7 @@ pipeline {
                         sshCommand remote: remote, command: """
 
 
-
-                        echo Login into Azure Container Registry
+                        echo Logging into ACR
 
 
 
@@ -368,13 +378,14 @@ pipeline {
 
 
 
+
                         docker pull ${ACR_LOGIN_SERVER}/${IMAGE_NAME}:latest
 
 
 
 
-
                         docker stop migration-dashboard || true
+
 
 
 
@@ -392,9 +403,7 @@ pipeline {
 
 
 
-
                         """
-
 
 
                     }
@@ -421,7 +430,6 @@ pipeline {
             steps {
 
 
-
                 echo "Checking application health"
 
 
@@ -430,15 +438,14 @@ pipeline {
 
                 curl http://20.198.84.41
 
-                """
 
+                """
 
 
             }
 
 
         }
-
 
 
 
@@ -466,7 +473,7 @@ pipeline {
         failure {
 
 
-            echo "Pipeline failed. Please check Jenkins console output."
+            echo "Pipeline failed. Check console output."
 
         }
 
