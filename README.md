@@ -1,12 +1,36 @@
 # Enterprise Migration Factory
 
-Enterprise Infrastructure Automation Platform built using:
-
-- Azure
+## Tech Stack
 - Terraform
-- Jenkins
+- Microsoft Azure
 - Docker
-- Linux
-- GitHub
+- Azure Container Registry
+- Jenkins (Coming Next)
 
-This project automates provisioning, configuration, deployment, and monitoring of Azure infrastructure.
+## Architecture
+
+GitHub
+↓
+Terraform
+↓
+Azure Infrastructure
+↓
+Docker Image
+↓
+Azure Container Registry
+↓
+Azure VM
+↓
+Docker Container
+↓
+Public IP
+↓
+Migration Dashboard
+
+## Features
+- Infrastructure as Code
+- Dockerized Node.js Application
+- Azure Container Registry Integration
+- Azure VM Deployment
+- NSG Secured Networking
+- CI/CD (In Progress)

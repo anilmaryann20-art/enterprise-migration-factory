@@ -1,0 +1,146 @@
+pipeline {
+
+    agent any
+
+    environment {
+        ACR_NAME         = "acremfdev001"
+        ACR_LOGIN_SERVER = "acremfdev001.azurecr.io"
+        IMAGE_NAME       = "migration-dashboard"
+    }
+
+    stages {
+
+        stage('Checkout Code') {
+            steps {
+                echo "Checking out latest code from GitHub"
+                checkout scm
+            }
+        }
+
+        stage('Terraform Validate') {
+            steps {
+                echo "Initializing and validating Terraform"
+
+                dir('terraform') {
+                    bat 'terraform init'
+                    bat 'terraform validate'
+                }
+            }
+        }
+
+        stage('Terraform Plan') {
+            steps {
+                echo "Planning Terraform infrastructure"
+
+                dir('terraform') {
+                    bat 'terraform plan'
+                }
+            }
+        }
+
+        stage('Terraform Apply') {
+            steps {
+                echo "Applying Terraform infrastructure"
+
+                dir('terraform') {
+                    bat 'terraform apply -auto-approve'
+                }
+            }
+        }
+
+        stage('Docker Build') {
+            steps {
+                echo "Building Docker Image"
+
+                dir('app') {
+                    bat "docker build -t ${IMAGE_NAME}:latest ."
+                }
+            }
+        }
+
+        stage('Push to ACR') {
+            steps {
+                echo "Tagging and pushing image to Azure Container Registry"
+
+                dir('app') {
+
+                    bat "docker tag ${IMAGE_NAME}:latest ${ACR_LOGIN_SERVER}/${IMAGE_NAME}:latest"
+
+                    bat "docker push ${ACR_LOGIN_SERVER}/${IMAGE_NAME}:latest"
+
+                }
+            }
+        }
+
+        stage('Deploy to Azure VM') {
+            steps {
+
+                echo "Deploying application to Azure VM"
+
+                withCredentials([
+
+                    usernamePassword(
+                        credentialsId: 'azure-vm-creds',
+                        usernameVariable: 'VM_USER',
+                        passwordVariable: 'VM_PASS'
+                    ),
+
+                    usernamePassword(
+                        credentialsId: 'azure-acr-creds',
+                        usernameVariable: 'ACR_USER',
+                        passwordVariable: 'ACR_PASS'
+                    )
+
+                ]) {
+
+                    script {
+
+                        def remote = [
+                            name: 'azure-vm',
+                            host: '20.198.84.41',
+                            user: VM_USER,
+                            password: VM_PASS,
+                            allowAnyHosts: true
+                        ]
+
+                        sshCommand remote: remote, command: """
+                            echo ${ACR_PASS} | docker login ${ACR_LOGIN_SERVER} -u ${ACR_USER} --password-stdin
+
+                            docker pull ${ACR_LOGIN_SERVER}/${IMAGE_NAME}:latest
+
+                            docker stop migration-dashboard || true
+
+                            docker rm -f migration-dashboard || true
+
+                            docker run -d --restart unless-stopped -p 80:3000 --name migration-dashboard ${ACR_LOGIN_SERVER}/${IMAGE_NAME}:latest
+                        """
+                    }
+                }
+            }
+        }
+
+        stage('Health Check') {
+            steps {
+
+                echo "Checking application health..."
+
+                bat "curl http://20.198.84.41"
+
+            }
+        }
+
+    }
+
+    post {
+
+        success {
+            echo "Pipeline completed successfully!"
+        }
+
+        failure {
+            echo "Pipeline failed. Please check Jenkins console output."
+        }
+
+    }
+
+}
