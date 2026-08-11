@@ -35,3 +35,4 @@ Migration Dashboard
 - NSG Secured Networking
 - CI/CD 
 - CI/CD webhook integration configured
+- Log Analytics
