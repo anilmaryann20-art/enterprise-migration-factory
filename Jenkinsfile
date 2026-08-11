@@ -17,9 +17,78 @@ pipeline {
 
     stages {
 
+        stage('Detect Changes') {
 
+            steps {
+
+                script {
+
+                    def previousCommit = bat(
+                        script: '@echo %GIT_PREVIOUS_COMMIT%',
+                        returnStdout: true
+                    ).trim()
+
+                    def currentCommit = bat(
+                        script: '@echo %GIT_COMMIT%',
+                        returnStdout: true
+                    ).trim()
+
+                    echo "Previous commit: ${previousCommit}"
+                    echo "Current commit: ${currentCommit}"
+
+                    if (!previousCommit ||
+                        previousCommit == '%GIT_PREVIOUS_COMMIT%') {
+
+                        env.TERRAFORM_CHANGED = 'true'
+                        env.APP_CHANGED = 'true'
+
+                        echo "No previous Jenkins commit found."
+                        echo "Running Terraform and Application stages."
+
+                    } else {
+
+                        def changedFiles = bat(
+                            script: """
+                            @git diff --name-only ${previousCommit} ${currentCommit}
+                            """,
+                            returnStdout: true
+                        ).trim()
+
+                        echo "Changed files:"
+                        echo changedFiles
+
+                        env.TERRAFORM_CHANGED = 'false'
+                        env.APP_CHANGED = 'false'
+
+                        changedFiles.split('\\r?\\n').each { file ->
+
+                            if (file.startsWith('terraform/') ||
+                                file == 'Jenkinsfile') {
+
+                                env.TERRAFORM_CHANGED = 'true'
+                            }
+
+                            if (file.startsWith('app/') ||
+                                file == 'Jenkinsfile') {
+
+                                env.APP_CHANGED = 'true'
+                            }
+                        }
+
+                        echo "Terraform changed: ${env.TERRAFORM_CHANGED}"
+                        echo "Application changed: ${env.APP_CHANGED}"
+                    }
+                }
+            }
+        }
 
         stage('Azure Authentication') {
+            when {
+                expression {
+                    env.TERRAFORM_CHANGED == 'true' ||
+                        env.APP_CHANGED == 'true'
+                    }
+                }
 
             steps {
 
@@ -78,13 +147,13 @@ pipeline {
 
         }
 
-
-
-
-
-
         stage('Terraform Validate') {
-
+            
+            when {
+                expression {
+                    env.TERRAFORM_CHANGED == 'true'
+                }
+            }
 
             steps {
 
@@ -114,12 +183,14 @@ pipeline {
         }
 
 
-
-
-
-
        stage('Terraform Plan') {
 
+        when {
+            expression {
+                env.TERRAFORM_CHANGED == 'true'
+            }
+        }
+        
         steps {
 
             echo "Terraform Plan"
@@ -151,6 +222,12 @@ pipeline {
 
         stage('Terraform Apply') {
 
+            when {
+                expression {
+                    env.TERRAFORM_CHANGED == 'true'
+                }
+            }
+
             steps {
 
                 echo "Terraform Apply"
@@ -180,13 +257,14 @@ pipeline {
         }
 
 
-
-
-
-
-
         stage('Docker Build') {
+           
 
+            when {
+                expression {
+                    env.APP_CHANGED == 'true'
+                }
+            }
 
             steps {
 
@@ -203,8 +281,6 @@ pipeline {
                     docker build ^
                     -t %IMAGE_NAME%:latest .
 
-
-
                     """
 
 
@@ -217,21 +293,18 @@ pipeline {
         }
 
 
-
-
-
-
-
-
         stage('Login and Push to ACR') {
 
+            when {
+                expression {
+                    env.APP_CHANGED == 'true'
+                }
+            }
 
             steps {
 
 
                 echo "Push Docker image to Azure Container Registry"
-
-
 
                 withCredentials([
 
@@ -248,8 +321,6 @@ pipeline {
 
 
                 ]) {
-
-
 
                     bat """
 
@@ -283,15 +354,12 @@ pipeline {
         }
 
 
-
-
-
-
-
-
-
         stage('Deploy to Azure VM') {
-
+            when {
+                expression {
+                    env.APP_CHANGED == 'true'
+                }
+            }
 
             steps {
 
@@ -357,7 +425,7 @@ pipeline {
 
 
                         sshCommand remote: remote, command: """
-                        echo \$ACR_PASS | docker login ${ACR_LOGIN_SERVER} \
+                        echo $ACR_PASS | docker login ${ACR_LOGIN_SERVER} \
                         -u ${ACR_USER} \
                         --password-stdin
 
@@ -390,16 +458,13 @@ pipeline {
 
         }
 
-
-
-
-
-
-
-
         stage('Health Check') {
 
-
+            when {
+                expression {
+                    env.APP_CHANGED == 'true'
+                }
+            }
             steps {
 
 
@@ -420,15 +485,7 @@ pipeline {
 
         }
 
-
-
-
     }
-
-
-
-
-
 
     post {
 
