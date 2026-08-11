@@ -34,4 +34,4 @@ Migration Dashboard
 - Azure VM Deployment
 - NSG Secured Networking
 - CI/CD 
-- CI/CD webhook integration configured.
+- CI/CD webhook integration configured
