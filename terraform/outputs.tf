@@ -41,3 +41,11 @@ output "admin_password" {
   value     = module.acr.admin_password
   sensitive = true
 }
+
+output "log_analytics_workspace_name" {
+  value = module.log_analytics.workspace_name
+}
+
+output "log_analytics_workspace_id" {
+  value = module.log_analytics.workspace_id
+}

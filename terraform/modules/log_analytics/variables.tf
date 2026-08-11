@@ -1,5 +1,5 @@
-variable "acr_name" {
-  description = "Azure Container Registry"
+variable "workspace_name" {
+  description = "Name of the Log Analytics workspace"
   type        = string
 }
 
@@ -9,6 +9,6 @@ variable "resource_group_name" {
 }
 
 variable "location" {
-  description = "Azure Region"
+  description = "Azure region for the Log Analytics workspace"
   type        = string
 }

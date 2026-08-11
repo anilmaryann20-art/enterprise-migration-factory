@@ -66,7 +66,12 @@ variable "public_ip_name" {
   type        = string
 }
 
-variable "acr_name"{
-    description = "Azure Container Registry"
-    type = string
+variable "acr_name" {
+  description = "Azure Container Registry"
+  type        = string
+}
+
+variable "log_analytics_workspace_name" {
+  description = "Name of the Log Analytics workspace"
+  type        = string
 }
