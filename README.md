@@ -33,4 +33,5 @@ Migration Dashboard
 - Azure Container Registry Integration
 - Azure VM Deployment
 - NSG Secured Networking
-- CI/CD (In Progress)
+- CI/CD 
+- CI/CD webhook integration configured.
