@@ -26,9 +26,6 @@ output "virtual_machine_name" {
   value = module.virtual_machine.virtual_machine_name
 }
 
-output "virtual_machine_id" {
-  value = module.virtual_machine.virtual_machine_id
-}
 output "login_server" {
   value = module.acr.login_server
 }
@@ -49,3 +46,4 @@ output "log_analytics_workspace_name" {
 output "log_analytics_workspace_id" {
   value = module.log_analytics.workspace_id
 }
+
