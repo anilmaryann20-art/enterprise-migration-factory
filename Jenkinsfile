@@ -2,18 +2,11 @@ pipeline {
 
     agent any
 
-
     environment {
-
         ACR_NAME         = "acremfdev001"
         ACR_LOGIN_SERVER = "acremfdev001.azurecr.io"
         IMAGE_NAME       = "migration-dashboard"
-
-        //TF_VAR_FILE = "C:\\ProgramData\\Jenkins\\.jenkins\\terraform-secrets\\dev.tfvars"
-
     }
-
-
 
     stages {
 
@@ -71,7 +64,6 @@ pipeline {
                             if (file.startsWith('app/')) {
                                 env.APP_CHANGED = 'true'
                             }
-                            }
                         }
 
                         echo "Terraform changed: ${env.TERRAFORM_CHANGED}"
@@ -81,19 +73,19 @@ pipeline {
             }
         }
 
+
         stage('Azure Authentication') {
+
             when {
                 expression {
                     env.TERRAFORM_CHANGED == 'true' ||
-                        env.APP_CHANGED == 'true'
-                    }
+                    env.APP_CHANGED == 'true'
                 }
+            }
 
             steps {
 
-
                 echo "Authenticating Jenkins with Azure"
-
 
                 withCredentials([
 
@@ -108,56 +100,45 @@ pipeline {
                         clientSecretVariable: 'AZURE_CLIENT_SECRET',
 
                         tenantIdVariable: 'AZURE_TENANT_ID'
-
                     )
 
                 ]) {
 
-
                     bat """
 
                     echo Logging into Azure
-
 
                     az login --service-principal ^
                     -u %AZURE_CLIENT_ID% ^
                     -p %AZURE_CLIENT_SECRET% ^
                     --tenant %AZURE_TENANT_ID%
 
-
-
                     az account set ^
                     --subscription %AZURE_SUBSCRIPTION_ID%
 
-
-
                     az account show
 
-
-
                     """
-
-
                 }
-
-
             }
-
-
         }
+
 
         stage('Fetch Secrets from Key Vault') {
-    when {
-        expression {
-            env.TERRAFORM_CHANGED == 'true' ||
-            env.APP_CHANGED == 'true'
-        }
-    }
+
+            when {
+                expression {
+                    env.TERRAFORM_CHANGED == 'true' ||
+                    env.APP_CHANGED == 'true'
+                }
+            }
+
             steps {
+
                 script {
+
                     echo "Fetching secrets from Azure Key Vault"
 
-                    // Fetch ACR credentials
                     env.ACR_USERNAME = bat(
                         script: '@az keyvault secret show --vault-name kv-emf-dev-001 --name acr-username --query value -o tsv',
                         returnStdout: true
@@ -184,8 +165,9 @@ pipeline {
             }
         }
 
+
         stage('Terraform Validate') {
-            
+
             when {
                 expression {
                     env.TERRAFORM_CHANGED == 'true'
@@ -194,13 +176,9 @@ pipeline {
 
             steps {
 
-
                 echo "Terraform validation"
 
-
-
                 dir('terraform') {
-
 
                     bat """
 
@@ -209,52 +187,45 @@ pipeline {
                     terraform validate
 
                     """
-
-
                 }
-
-
-            }
-
-
-        }
-
-
-       stage('Terraform Plan') {
-
-        when {
-            expression {
-                env.TERRAFORM_CHANGED == 'true'
             }
         }
-        
-        steps {
 
-            echo "Terraform Plan"
 
-            withCredentials([
-                file(
-                    credentialsId: 'terraform-dev-tfvars',
-                    variable: 'TFVARS_FILE'
-                )
-            ]) {
+        stage('Terraform Plan') {
 
-            dir('terraform') {
-
-                bat """
-                terraform plan ^
-                -input=false ^
-                -var-file="%TFVARS_FILE%"
-                """
-
+            when {
+                expression {
+                    env.TERRAFORM_CHANGED == 'true'
+                }
             }
 
+            steps {
+
+                echo "Terraform Plan"
+
+                withCredentials([
+
+                    file(
+                        credentialsId: 'terraform-dev-tfvars',
+                        variable: 'TFVARS_FILE'
+                    )
+
+                ]) {
+
+                    dir('terraform') {
+
+                        bat """
+
+                        terraform plan ^
+                        -input=false ^
+                        -var-file="%TFVARS_FILE%"
+
+                        """
+                    }
+                }
+            }
         }
-
-    }
-
-}
-
 
 
         stage('Terraform Apply') {
@@ -270,32 +241,31 @@ pipeline {
                 echo "Terraform Apply"
 
                 withCredentials([
+
                     file(
                         credentialsId: 'terraform-dev-tfvars',
                         variable: 'TFVARS_FILE'
                     )
+
                 ]) {
 
                     dir('terraform') {
 
                         bat """
+
                         terraform apply ^
                         -auto-approve ^
                         -input=false ^
                         -var-file="%TFVARS_FILE%"
+
                         """
-
                     }
-
                 }
-
             }
-
         }
 
 
         stage('Docker Build') {
-           
 
             when {
                 expression {
@@ -305,13 +275,9 @@ pipeline {
 
             steps {
 
-
                 echo "Building Docker Image"
 
-
-
                 dir('app') {
-
 
                     bat """
 
@@ -319,26 +285,25 @@ pipeline {
                     -t %IMAGE_NAME%:latest .
 
                     """
-
-
                 }
-
-
             }
-
-
         }
 
 
         stage('Login and Push to ACR') {
+
             when {
                 expression {
                     env.APP_CHANGED == 'true'
                 }
             }
+
             steps {
+
                 echo "Push Docker image to Azure Container Registry"
+
                 bat """
+
                 docker login %ACR_LOGIN_SERVER% ^
                 -u %ACR_USERNAME% ^
                 -p %ACR_PASSWORD%
@@ -349,28 +314,41 @@ pipeline {
 
                 docker push ^
                 %ACR_LOGIN_SERVER%/%IMAGE_NAME%:latest
+
                 """
             }
         }
 
+
         stage('Deploy to Azure VM') {
+
             when {
                 expression {
                     env.APP_CHANGED == 'true'
                 }
             }
+
             steps {
+
                 echo "Deploying application on Azure VM"
+
                 script {
+
                     def remote = [
+
                         name: 'azure-vm',
+
                         host: '20.198.84.41',
+
                         user: env.VM_USERNAME,
+
                         password: env.VM_PASSWORD,
+
                         allowAnyHosts: true
                     ]
 
                     sshCommand remote: remote, command: """
+
                     echo ${env.ACR_PASSWORD} | docker login ${ACR_LOGIN_SERVER} \
                     -u ${env.ACR_USERNAME} \
                     --password-stdin
@@ -378,6 +356,7 @@ pipeline {
                     docker pull ${ACR_LOGIN_SERVER}/${IMAGE_NAME}:latest
 
                     docker stop migration-dashboard || true
+
                     docker rm -f migration-dashboard || true
 
                     docker run -d \
@@ -385,10 +364,12 @@ pipeline {
                     -p 80:3000 \
                     --name migration-dashboard \
                     ${ACR_LOGIN_SERVER}/${IMAGE_NAME}:latest
+
                     """
                 }
             }
         }
+
 
         stage('Health Check') {
 
@@ -397,50 +378,36 @@ pipeline {
                     env.APP_CHANGED == 'true'
                 }
             }
+
             steps {
 
-
                 echo "Checking application health"
-
-
 
                 bat """
 
                 curl http://20.198.84.41
 
-
                 """
-
-
             }
-
-
         }
 
     }
 
+
     post {
 
-
-
         success {
-
 
             echo "Pipeline completed successfully"
 
         }
 
-
-
         failure {
-
 
             echo "Pipeline failed. Check console output."
 
         }
 
-
     }
-
 
 }
