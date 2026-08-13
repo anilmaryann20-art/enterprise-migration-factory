@@ -47,3 +47,10 @@ output "log_analytics_workspace_id" {
   value = module.log_analytics.workspace_id
 }
 
+output "key_vault_name" {
+  value = module.key_vault.key_vault_name
+}
+
+output "key_vault_uri" {
+  value = module.key_vault.key_vault_uri
+}

@@ -147,6 +147,44 @@ pipeline {
 
         }
 
+        stage('Fetch Secrets from Key Vault') {
+    when {
+        expression {
+            env.TERRAFORM_CHANGED == 'true' ||
+            env.APP_CHANGED == 'true'
+        }
+    }
+            steps {
+                script {
+                    echo "Fetching secrets from Azure Key Vault"
+
+                    // Fetch ACR credentials
+                    env.ACR_USERNAME = bat(
+                        script: '@az keyvault secret show --vault-name kv-emf-dev-001 --name acr-username --query value -o tsv',
+                        returnStdout: true
+                    ).trim()
+
+                    env.ACR_PASSWORD = bat(
+                        script: '@az keyvault secret show --vault-name kv-emf-dev-001 --name acr-password --query value -o tsv',
+                        returnStdout: true
+                    ).trim()
+
+                    env.VM_USERNAME = bat(
+                        script: '@az keyvault secret show --vault-name kv-emf-dev-001 --name vm-username --query value -o tsv',
+                        returnStdout: true
+                    ).trim()
+
+                    env.VM_PASSWORD = bat(
+                        script: '@az keyvault secret show --vault-name kv-emf-dev-001 --name vm-password --query value -o tsv',
+                        returnStdout: true
+                    ).trim()
+
+                    echo "Secrets fetched successfully from Key Vault"
+                    echo "ACR Username: ${env.ACR_USERNAME}"
+                }
+            }
+        }
+
         stage('Terraform Validate') {
             
             when {
@@ -294,65 +332,27 @@ pipeline {
 
 
         stage('Login and Push to ACR') {
-
             when {
                 expression {
                     env.APP_CHANGED == 'true'
                 }
             }
-
             steps {
-
-
                 echo "Push Docker image to Azure Container Registry"
+                bat """
+                docker login %ACR_LOGIN_SERVER% ^
+                -u %ACR_USERNAME% ^
+                -p %ACR_PASSWORD%
 
-                withCredentials([
+                docker tag ^
+                %IMAGE_NAME%:latest ^
+                %ACR_LOGIN_SERVER%/%IMAGE_NAME%:latest
 
-
-                    usernamePassword(
-
-                        credentialsId: 'azure-acr-creds',
-
-                        usernameVariable: 'ACR_USER',
-
-                        passwordVariable: 'ACR_PASS'
-
-                    )
-
-
-                ]) {
-
-                    bat """
-
-
-                    docker login %ACR_LOGIN_SERVER% ^
-                    -u %ACR_USER% ^
-                    -p %ACR_PASS%
-
-
-
-                    docker tag ^
-                    %IMAGE_NAME%:latest ^
-                    %ACR_LOGIN_SERVER%/%IMAGE_NAME%:latest
-
-
-
-                    docker push ^
-                    %ACR_LOGIN_SERVER%/%IMAGE_NAME%:latest
-
-
-
-                    """
-
-
-                }
-
-
+                docker push ^
+                %ACR_LOGIN_SERVER%/%IMAGE_NAME%:latest
+                """
             }
-
-
         }
-
 
         stage('Deploy to Azure VM') {
             when {
@@ -360,104 +360,37 @@ pipeline {
                     env.APP_CHANGED == 'true'
                 }
             }
-
             steps {
-
-
                 echo "Deploying application on Azure VM"
+                script {
+                    def remote = [
+                        name: 'azure-vm',
+                        host: '20.198.84.41',
+                        user: env.VM_USERNAME,
+                        password: env.VM_PASSWORD,
+                        allowAnyHosts: true
+                    ]
 
+                    sshCommand remote: remote, command: """
+                    echo ${env.ACR_PASSWORD} | docker login ${ACR_LOGIN_SERVER} \
+                    -u ${env.ACR_USERNAME} \
+                    --password-stdin
 
+                    docker pull ${ACR_LOGIN_SERVER}/${IMAGE_NAME}:latest
 
-                withCredentials([
+                    docker stop migration-dashboard || true
+                    docker rm -f migration-dashboard || true
 
-
-                    usernamePassword(
-
-                        credentialsId: 'azure-vm-creds',
-
-                        usernameVariable: 'VM_USER',
-
-                        passwordVariable: 'VM_PASS'
-
-                    ),
-
-
-                    usernamePassword(
-
-                        credentialsId: 'azure-acr-creds',
-
-                        usernameVariable: 'ACR_USER',
-
-                        passwordVariable: 'ACR_PASS'
-
-                    )
-
-
-                ]) {
-
-
-
-                    script {
-
-
-                        def remote = [
-
-
-                            name: 'azure-vm',
-
-
-                            host: '20.198.84.41',
-
-
-                            user: VM_USER,
-
-
-                            password: VM_PASS,
-
-
-                            allowAnyHosts: true
-
-
-                        ]
-
-
-
-
-
-                        sshCommand remote: remote, command: """
-                        echo $ACR_PASS | docker login ${ACR_LOGIN_SERVER} \
-                        -u ${ACR_USER} \
-                        --password-stdin
-
-
-                        docker pull ${ACR_LOGIN_SERVER}/${IMAGE_NAME}:latest
-
-
-                        docker stop migration-dashboard || true
-
-
-                        docker rm -f migration-dashboard || true
-
-
-                        docker run -d \
-                        --restart unless-stopped \
-                        -p 80:3000 \
-                        --name migration-dashboard \
-                        ${ACR_LOGIN_SERVER}/${IMAGE_NAME}:latest
-                        """
-
-
-                    }
-
-
+                    docker run -d \
+                    --restart unless-stopped \
+                    -p 80:3000 \
+                    --name migration-dashboard \
+                    ${ACR_LOGIN_SERVER}/${IMAGE_NAME}:latest
+                    """
                 }
-
-
             }
-
-
         }
-
+        
         stage('Health Check') {
 
             when {

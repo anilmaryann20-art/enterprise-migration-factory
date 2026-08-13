@@ -101,3 +101,16 @@ module "acr" {
   resource_group_name = module.resource_group.resource_group_name
   location            = var.location
 }
+
+module "key_vault" {
+  source = "./modules/key_vault"
+
+  key_vault_name      = var.key_vault_name
+  location            = var.location
+  resource_group_name = module.resource_group.resource_group_name
+  jenkins_object_id   = var.jenkins_object_id
+  acr_username        = var.acr_username
+  acr_password        = var.acr_password
+  vm_username         = var.admin_username
+  vm_password         = var.admin_password
+}

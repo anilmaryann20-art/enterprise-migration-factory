@@ -76,3 +76,24 @@ variable "log_analytics_workspace_name" {
   type        = string
 }
 
+variable "key_vault_name" {
+  description = "Key Vault Name"
+  type        = string
+}
+
+variable "jenkins_object_id" {
+  description = "Object ID of Jenkins Service Principal"
+  type        = string
+}
+
+variable "acr_username" {
+  description = "ACR Admin Username"
+  type        = string
+  sensitive   = true
+}
+
+variable "acr_password" {
+  description = "ACR Admin Password"
+  type        = string
+  sensitive   = true
+}
