@@ -53,7 +53,7 @@ resource "azurerm_key_vault_secret" "vm_password" {
 }
 
 resource "azurerm_role_assignment" "jenkins_keyvault_reader" {
-  scope                = azurerm_key_vault.this.id
   role_definition_name = "Key Vault Secrets User"
   principal_id         = var.jenkins_object_id
+  scope                = azurerm_key_vault.this.id
 }

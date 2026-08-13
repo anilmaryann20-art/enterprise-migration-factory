@@ -390,7 +390,7 @@ pipeline {
                 }
             }
         }
-        
+
         stage('Health Check') {
 
             when {
@@ -427,7 +427,7 @@ pipeline {
         success {
 
 
-            echo "Pipeline completed successfully!"
+            echo "Pipeline completed successfully"
 
         }
 
