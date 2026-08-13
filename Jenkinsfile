@@ -68,10 +68,9 @@ pipeline {
                                 env.TERRAFORM_CHANGED = 'true'
                             }
 
-                            if (file.startsWith('app/') ||
-                                file == 'Jenkinsfile') {
-
+                            if (file.startsWith('app/')) {
                                 env.APP_CHANGED = 'true'
+                            }
                             }
                         }
 
