@@ -1,38 +1,31 @@
 # Enterprise Migration Factory
 
-## Tech Stack
-- Terraform
-- Microsoft Azure
-- Docker
-- Azure Container Registry
-- Jenkins (Coming Next)
+## Overview
+Fully automated DevOps pipeline provisioning 
+Azure infrastructure via Terraform and deploying 
+a containerized application through Jenkins CI/CD.
 
 ## Architecture
+![Architecture](docs/architecture.png)
 
-GitHub
-↓
-Terraform
-↓
-Azure Infrastructure
-↓
-Docker Image
-↓
-Azure Container Registry
-↓
-Azure VM
-↓
-Docker Container
-↓
-Public IP
-↓
-Migration Dashboard
+## Tech Stack
+- Jenkins (CI/CD)
+- Terraform (IaC — 9 modules)
+- Docker + Azure Container Registry
+- Azure Key Vault + RBAC
+- Azure Monitor + Log Analytics
+- GitHub Webhooks
 
-## Features
-- Infrastructure as Code
-- Dockerized Node.js Application
-- Azure Container Registry Integration
-- Azure VM Deployment
-- NSG Secured Networking
-- CI/CD 
-- CI/CD webhook integration configured
-- Log Analytics
+## Pipeline Stages
+1. Detect Changes
+2. Azure Authentication (Service Principal)
+3. Fetch Secrets from Key Vault
+4. Terraform Validate → Plan → Apply
+5. Docker Build
+6. Push to ACR
+7. Deploy to Azure VM
+8. Health Check
+
+## How to run
+terraform init
+terraform apply -var-file="dev.tfvars"
