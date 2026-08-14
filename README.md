@@ -6,7 +6,7 @@ Azure infrastructure via Terraform and deploying
 a containerized application through Jenkins CI/CD.
 
 ## Architecture
-![Architecture](docs/architecture.png)
+![Architecture](docs/Architecture Diagram.png)
 
 ## Tech Stack
 - Jenkins (CI/CD)
